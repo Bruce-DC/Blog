@@ -18,4 +18,10 @@
 <p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
 ]]></content>
   </entry>
+  <entry>
+    <title>我想在文章中插入图片</title>
+    <url>/2020/12/17/%E6%88%91%E6%83%B3%E5%9C%A8%E6%96%87%E7%AB%A0%E4%B8%AD%E6%8F%92%E5%85%A5%E5%9B%BE%E7%89%87/</url>
+    <content><![CDATA[<p>这是我的头像<br><img src="/.com//%E5%A4%B4%E5%83%8F.jpg" alt="touxiang"></p>
+]]></content>
+  </entry>
 </search>
