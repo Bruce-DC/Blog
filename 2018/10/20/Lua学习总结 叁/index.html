@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/samllIcon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/samllIcon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/samllIcon.png">
+  <link rel="mask-icon" href="/images/samllIcon.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=ZCOOL KuaiLe:300,300italic,400,400italic,700,700italic|Nunito:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-mac-osx.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":false,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1.Lua中的模块 Lua学习到这里的时候我们产生一个疑问，Lua的代码是怎么写的呢？全都写在一个文件中吗？显然不可能。那样的话耦合度也太高了吧？ Lua中为我们提供了模块的功能，类似于C#中的命名空间，我们在Lua代码中引入模块，就可以调用模块中的公有变量或函数了，相当于提供了API接口。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Lua学习总结 叁">
+<meta property="og:url" content="http://example.com/2018/10/20/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/index.html">
+<meta property="og:site_name" content="博士のクール">
+<meta property="og:description" content="1.Lua中的模块 Lua学习到这里的时候我们产生一个疑问，Lua的代码是怎么写的呢？全都写在一个文件中吗？显然不可能。那样的话耦合度也太高了吧？ Lua中为我们提供了模块的功能，类似于C#中的命名空间，我们在Lua代码中引入模块，就可以调用模块中的公有变量或函数了，相当于提供了API接口。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2018/10/20/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/ncHdGAhwIbimajZ.png">
+<meta property="og:image" content="http://example.com/2018/10/20/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/nD3IyZtOLMHRK2p.png">
+<meta property="article:published_time" content="2018-10-20T14:33:56.000Z">
+<meta property="article:modified_time" content="2018-10-20T14:33:56.000Z">
+<meta property="article:author" content="我真的叫博士">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2018/10/20/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/ncHdGAhwIbimajZ.png">
+
+<link rel="canonical" href="http://example.com/2018/10/20/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Lua学习总结 叁 | 博士のクール</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <!--<div class="headband"></div>-->
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">博士のクール</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">编程、游戏、摄影...呃...不一定全都有。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/10/20/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="我真的叫博士">
+      <meta itemprop="description" content="真的！">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="博士のクール">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Lua学习总结 叁
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-10-20 22:33:56" itemprop="dateCreated datePublished" datetime="2018-10-20T22:33:56+08:00">2018-10-20</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%83%AD%E6%9B%B4%E6%96%B0/" itemprop="url" rel="index"><span itemprop="name">热更新</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><strong>1.Lua中的模块</strong></p>
+<p>Lua学习到这里的时候我们产生一个疑问，Lua的代码是怎么写的呢？全都写在一个文件中吗？显然不可能。那样的话耦合度也太高了吧？</p>
+<p>Lua中为我们提供了模块的功能，类似于C#中的命名空间，我们在Lua代码中引入模块，就可以调用模块中的公有变量或函数了，相当于提供了API接口。</p>
+<a id="more"></a>
+
+<p>实际上，模块的本质是一个table，只是table中放的是变量和函数，那么我们定义模块的方法就很简单了：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">mymodule=&#123;&#125;		<span class="comment">--模块的本质是一个table</span></span><br><span class="line"></span><br><span class="line">mymodule.num=<span class="number">1</span>		<span class="comment">--声明了一个公有变量</span></span><br><span class="line"></span><br><span class="line">mymodule.str=<span class="string">&quot;str&quot;</span>	<span class="comment">--声明了一个公有变量</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">local</span> a=<span class="number">2</span>			<span class="comment">--声明了私有变量</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">local</span> str2=<span class="string">&quot;str&quot;</span>	<span class="comment">--声明了私有变量</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">mymodule.getstr</span><span class="params">()</span></span>		<span class="comment">--声明了公有函数</span></span><br><span class="line">	<span class="keyword">return</span> mymodule.str,str2</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">local</span> <span class="function"><span class="keyword">function</span> <span class="title">getnum</span><span class="params">()</span></span>		<span class="comment">--声明了私有函数,私有函数声明时直接写出函数名即可，</span></span><br><span class="line">								<span class="comment">--不能像公有函数那样 模块名.函数名()来声明</span></span><br><span class="line">								<span class="comment">--否则会运行报错</span></span><br><span class="line">	<span class="keyword">return</span> mymodule.num,a</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> mymodule</span><br></pre></td></tr></table></figure>
+<p>我们在另一个lua脚本中使用该模块：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">require</span> <span class="string">&quot;mymodule&quot;</span>		<span class="comment">--引入模块，引号中填入的应该是文件名，而不是定义模块时的模块名</span></span><br><span class="line">						<span class="comment">--为了减少出错，我们可以在定义模块的时候模块名和文件名同步</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(mymodule.num)		<span class="comment">--调用模块中的公有变量</span></span><br><span class="line"><span class="built_in">print</span>(mymodule.str)		<span class="comment">--调用模块中的公有变量</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(mymodule.a)		<span class="comment">--调用模块中的私有变量</span></span><br><span class="line"><span class="built_in">print</span>(mymodule.str2)	<span class="comment">--调用模块中的私有变量</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(mymodule.getstr())	<span class="comment">--调用模块中的公有函数</span></span><br><span class="line"><span class="built_in">print</span>(mymodule.getnum())	<span class="comment">--调用模块中的私有函数</span></span><br></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<p><img src="Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/ncHdGAhwIbimajZ.png"></p>
+<p>公有变量可以正常获取，私有变量获取不到，公有函数可以正常调用，私有方法的调用直接报错。</p>
+<p><strong>2.Lua中的元表</strong></p>
+<p>Lua中引入了元表的概念，我的理解是：<strong>普通表可以根据其元表中定义的行为来对表中的元素进行处理，说白了就是元表为该普通表提供了自定义的方法扩展。</strong></p>
+<p>比如对于表，我们想要挨个输出表中的元素，现阶段只能使用for循环，但是我们能不能使用更简单的方法呢？而不是每次挨个输出都要经历for循环。我们学习了元表，可以自定义一个功能行为来解决这个问题。</p>
+<p>在Lua中可以使用下面的方法来设置元表和获取元表：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">tab1=&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3.4</span>,<span class="number">5</span>&#125;</span><br><span class="line">tab2=&#123;<span class="string">&quot;a&quot;</span>,<span class="string">&quot;b&quot;</span>,<span class="string">&quot;c&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line">metatab1=&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">setmetatable</span>(tab1,metatab1)		<span class="comment">--将metatab1表设置为tab1表的元表，返回值为tab1</span></span><br><span class="line"><span class="built_in">getmetatable</span>(tab1)				<span class="comment">--获取tab1表的元表，返回值为tab1的元表</span></span><br></pre></td></tr></table></figure>
+<p>我们知道普通表里面放正常的数据，那么元表里面放什么呢？答案是：<strong>元方法</strong></p>
+<p><strong>__index原方法：当访问普通表中不存在的键时的处理方法：</strong></p>
+<p>这个方法是最常用的元方法，__index既可以是一个表，也可以是一个匿名函数，当__index为表时，我们访问了普通表中不存在的键的时候，会在__index表中查询该键，存在则返回值，不存在则返回nil：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">tab1=&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3.4</span>,<span class="number">5</span>&#125;</span><br><span class="line">tab2=&#123;&#125;</span><br><span class="line">tab2[<span class="number">9</span>]=<span class="number">10</span></span><br><span class="line"></span><br><span class="line">metatab1=&#123;</span><br><span class="line">	<span class="built_in">__index</span>=tab2</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">setmetatable</span>(tab1,metatab1)		<span class="comment">--将metatab1表设置为tab1表的元表，返回值为tab1</span></span><br><span class="line"><span class="built_in">getmetatable</span>(tab1)				<span class="comment">--获取tab1表的元表，返回值为tab1的元表</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(tab1[<span class="number">9</span>],tab1[<span class="number">10</span>])</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<p><img src="Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%8F%81/nD3IyZtOLMHRK2p.png"></p>
+<p>当__index为一个匿名函数时，则会按照匿名函数中处理的方式来处理问题：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">tab1=&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3.4</span>,<span class="number">5</span>&#125;</span><br><span class="line">tab2=&#123;&#125;</span><br><span class="line">tab2[<span class="number">9</span>]=<span class="number">10</span></span><br><span class="line"></span><br><span class="line">metatab1=&#123;</span><br><span class="line">	<span class="built_in">__index</span>=<span class="function"><span class="keyword">function</span><span class="params">(tab,key)</span></span></span><br><span class="line">		<span class="keyword">return</span>(<span class="string">&quot;该键不存在对应的值&quot;</span>)</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">setmetatable</span>(tab1,metatab1)		<span class="comment">--将metatab1表设置为tab1表的元表，返回值为tab1</span></span><br><span class="line"><span class="built_in">getmetatable</span>(tab1)				<span class="comment">--获取tab1表的元表，返回值为tab1的元表</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(tab1[<span class="number">9</span>],tab1[<span class="number">10</span>])</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<p>//////////////////////////////////////////////////////////////////////////////////////////</p>
+<p>引用菜鸟教程中的一段话：</p>
+<p>Lua查找一个表元素时的规则，其实就是如下3个步骤:</p>
+<ul>
+<li>1.在表中查找，如果找到，返回该元素，找不到则继续</li>
+<li>2.判断该表是否有元表，如果没有元表，返回nil，有元表则继续。</li>
+<li>3.判断元表有没有__index方法，如果__index方法为nil，则返回nil；如果__index方法是一个表，则重复1、2、3；如果__index方法是一个函数，则返回该函数的返回值。</li>
+</ul>
+<p><strong>__newindex:当修改普通表中不存在的键时的处理方法：</strong></p>
+<p>__index是访问涉及的元方法，__newindex是赋值修改涉及的元方法，使用方面都是一样的，既可以作为匿名函数，也可以作为表。</p>
+<p>当__newindex为匿名函数时，我们为普通表中不存在的索引元素进行赋值时会调用该匿名函数；</p>
+<p>当__newindex为表时，我们为普通表中不存在的索引元素赋值时，会将键值对放到__newindex表中，而不会放在普通表中。</p>
+<p><strong>__ call:当我们把普通表当做函数来使用时的处理方法：</strong></p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">__call</span> = <span class="function"><span class="keyword">function</span><span class="params">(tab,arg)</span></span></span><br><span class="line">      xxxxxxx</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>这样我们可以直接把表作为函数来使用：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">tab=&#123;&#125;</span><br><span class="line"></span><br><span class="line">tab(<span class="number">3</span>)</span><br></pre></td></tr></table></figure>
+<p><strong>__ tostring:当我们把普通表当做字符串来使用时的处理方法：</strong></p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">tab1=&#123;<span class="string">&quot;a&quot;</span>,<span class="string">&quot;b&quot;</span>,<span class="string">&quot;c&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line">tab2=&#123;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">__tostring</span> = <span class="function"><span class="keyword">function</span><span class="params">(tab)</span></span></span><br><span class="line">		<span class="built_in">print</span>(<span class="string">&quot;把表当做字符串来使用&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;&quot;</span>		</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">setmetatable</span>(tab1,tab2)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(tab1)    <span class="comment">--print方法中的标准参数就是字符串，所以说是把表作为字符串来使用</span></span><br></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<p>////////////////////////////////</p>
+<p>注意运行结果中有一个空行，是因为__tostring元方法返回值是””,所以也会输出。该元方法必须要有字符串返回值，否则程序会报错。</p>
+<p>Lua中内置的元方法有很多，我们在使用的时候查询即可。</p>
+<p><strong>3.Lua中的协同程序</strong></p>
+<p>协同程序的功能与Unity中的协程很相似，都是可以在程序运行的过程中控制暂停运行和启动运行。</p>
+<p>说起协同程序，很多时候都会与线程来比较。它们的主要区别在于：一个具有多个线程的程序可以同时运行这几个线程，而协同程序则不同，任意时刻只有一个协同程序在运行，这个协同程序只有被明确要求挂起的时候才会挂起暂停运行。</p>
+<p>协同程序的运行和挂起是由开发者来控制的，而线程的资源分配是由系统来完成的。</p>
+<p><strong>a.协同程序的定义：</strong></p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">co = <span class="built_in">coroutine</span>.<span class="built_in">create</span>(	<span class="comment">--定义一个名为co的协同程序</span></span><br><span class="line">	<span class="function"><span class="keyword">function</span> <span class="params">(a,b)</span></span>		<span class="comment">--定义一个匿名函数(必须是匿名函数)</span></span><br><span class="line">		<span class="built_in">print</span>(a*b)</span><br><span class="line">	<span class="keyword">end</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>b.协同程序的启动和继续运行：</strong></p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">coroutine</span>.<span class="built_in">resume</span>(co,<span class="number">2</span>,<span class="number">3</span>)	<span class="comment">--启动该协同程序并一定要传入参数才能气功成功</span></span><br></pre></td></tr></table></figure>
+<p>resume默认会返回boolean类型的返回值，true表示启动成功，false表示启动失败。</p>
+<p>Lua中还可以通过coroutine.wrap()方式来定义一个协同程序，两者的区别是后者可以通过  co(2,3)  的形式来启动协同程序，更加简单。</p>
+<p><strong>c.协同程序的暂停：</strong></p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">coroutine</span>.<span class="built_in">yield</span>()</span><br></pre></td></tr></table></figure>
+<p>嗯，看到了一个很亲切的词语。</p>
+<p><strong>d.协同程序的继续运行：</strong></p>
+<p>coroutine.resume()方法可以继续运行某个协同程序，只要传入协同程序的名称即可，不用再次传入其他参数。</p>
+<p><strong>e.协同程序的返回值：</strong></p>
+<p>可以通过匿名函数中的return来返回，也可以通过<code>coroutine.yield()</code>中填入值来在暂停的时候返回结果。</p>
+<p><strong>f.协同程序的状态：</strong></p>
+<p>当协同程序被创建出来还没有开启的时候，协同程序的状态为：挂起，</p>
+<p>启动之后到coroutine.yield之前，协同程序的状态为：正在运行</p>
+<p>暂停了之后，协同程序的状态为：挂起</p>
+<p>继续运行之后，协同程序的状态为：正在运行</p>
+<p>运行完成之后，协同程序的状态为：死亡。</p>
+<p>至此，该协同程序运行结束。</p>
+<p>死亡后的协同程序不能再次启动了。</p>
+<p><strong>4.Lua中文件的操作</strong></p>
+<p>读取：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">file=<span class="built_in">io</span>.<span class="built_in">open</span>(<span class="string">&quot;data.txt&quot;</span>,<span class="string">&quot;r&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">io</span>.<span class="built_in">input</span>(file)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">io</span>.<span class="built_in">read</span>())		<span class="comment">--io.read()获取文档中的一行</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">io</span>.<span class="built_in">close</span>(file)</span><br></pre></td></tr></table></figure>
+<p>对文件进行操作时，先获取到文件，然后打开文件，进行读取操作后，最后关闭文件。</p>
+<p>Lua中提供了几种模式：</p>
+<p>///////////////////////////////////////</p>
+<p><strong>5.Lua中的垃圾回收</strong></p>
+<p>Lua中的垃圾回收机制是由系统自动完成的，系统将会间隔一定的时间来执行垃圾回收操作，没有引用了的对象将会被回收。</p>
+<p>但是开发者也可以通过主动调用相关方法来进行一次垃圾回收操作。</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tab1=&#123; <span class="string">&quot;a&quot;</span>,<span class="string">&quot;b&quot;</span>,<span class="string">&quot;c&quot;</span>,<span class="string">&quot;d&quot;</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">collectgarbage</span>(<span class="string">&quot;count&quot;</span>))</span><br><span class="line"></span><br><span class="line">tab1=ni;			</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">collectgarbage</span>(<span class="string">&quot;count&quot;</span>))</span><br><span class="line"></span><br><span class="line"><span class="built_in">collectgarbage</span>(<span class="string">&quot;collect&quot;</span>)		<span class="comment">--主动进行一次垃圾回收</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">collectgarbage</span>(<span class="string">&quot;count&quot;</span>))</span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<p>//////////////////////////////////////////////////</p>
+<p>我们看到，当我们把一个表置空时，Lua使用的内存并不会马上减少，而在我们执行了一次垃圾回收后，所用内存减少了。</p>
+<p>所以我们说，要释放某一个对象内存，直接将其置空即可，其实是不准确的，只有当Lua执行了垃圾回收之后，那一块内存才真真正正被释放。</p>
+<p>我们不需要自己动手释放每一块内存区域，因为那样不方便，反而可能会拖累性能。</p>
+<p>当我们需要释放某个对象时，直接将其置空，然后等待下一个垃圾回收的时间节点到来，Lua将其释放就可以了。</p>
+<p>另外我认为我们最多只需要在必要的时候控制设置垃圾收集器的相关属性即可。</p>
+<p><strong>6.Lua中的面向对象编程</strong></p>
+<p>经过一段时间的学习，终于来到重中之重的阶段了。</p>
+<p>Lua中没有类的概念，所以我们的封装和继承等面向对象的特性无法直接实现，但是我们可以通过表来模拟类的功能。</p>
+<p>简单的面向对象：</p>
+<p>表中可以放键值对，可以放函数。那么我们可以将键看做属性，将值看做属性值，函数的键看做方法名，函数本身看做方法体。</p>
+<p>所以我们就有了简单的面向对象定义方法：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">birds=&#123; name = <span class="string">&quot;鸽子&quot;</span>, voice=<span class="string">&quot;咕咕叫&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">birds.shout</span><span class="params">()</span></span></span><br><span class="line">	<span class="built_in">print</span>(birds.name..birds.voice)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">birds.shout()</span><br></pre></td></tr></table></figure>
+<p>我们定义了一个鸟的对象，对象包含鸟的名字，鸟的叫声和鸟叫的行为，这些都是放在一张表中的，我们直接调用它叫的函数，可以输出相应的结果：</p>
+<p>//////////////////////////////////////</p>
+<p>这就可以看做是简单的封装。</p>
+<p>但是这样声明函数的时候是存在一些问题的，比如：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">birds=&#123; name = <span class="string">&quot;鸽子&quot;</span>, voice=<span class="string">&quot;咕咕叫&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">birds.shout</span><span class="params">()</span></span></span><br><span class="line">	<span class="built_in">print</span>(birds.name..birds.voice)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">a=birds</span><br><span class="line"></span><br><span class="line">birds=<span class="literal">nil</span></span><br><span class="line"></span><br><span class="line">a.shout()</span><br></pre></td></tr></table></figure>
+<p>这样写是会报错的，因为虽然a现在持有了对原先对象的引用，但是在函数里，birds.name已经不存在了。所以这样很不方便。</p>
+<p>因此我们使用另一种方法来定义函数：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">birds=&#123; name = <span class="string">&quot;鸽子&quot;</span>, voice=<span class="string">&quot;咕咕叫&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">birds:shout</span><span class="params">()</span></span></span><br><span class="line">	<span class="built_in">print</span>(<span class="built_in">self</span>.name..<span class="built_in">self</span>.voice)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">a=birds</span><br><span class="line"></span><br><span class="line">birds=<span class="literal">nil</span></span><br><span class="line"></span><br><span class="line">a:shout()</span><br></pre></td></tr></table></figure>
+<p>使用冒号来代替点来定义和调用函数，效果是一样的，只是函数内会有一个self的参数来代表当前的表，这就比较方便我们操作了。否则的话在调用函数的时候需要将表名传入才可以。</p>
+<p>但是这样也会存在问题的，鸟的种类那么多，我要声明另一种鸟的话也要写这么一大堆吗？</p>
+<p>想想我们C#中，定义好了一个类，我们就可以new很多个对象了，多么方便！</p>
+<p>那么我们在Lua中怎样才能达到相同的效果呢？</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">birds=&#123; name = “”, voice=””&#125;</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">birds:shout</span><span class="params">()</span></span></span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">self</span>.name..<span class="built_in">self</span>.voice)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">birds:new</span><span class="params">()</span></span></span><br><span class="line">    <span class="keyword">local</span> tab=&#123;&#125;</span><br><span class="line">    <span class="built_in">setmetatable</span>(tab,&#123;<span class="built_in">__index</span> = <span class="built_in">self</span>&#125;)</span><br><span class="line">    <span class="keyword">return</span> tab</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line">sparrow = birds:new()</span><br><span class="line">dove=birds:new()</span><br><span class="line">sparrow.name=”麻雀”</span><br><span class="line">sparrow.voice=”啾啾叫”</span><br><span class="line">dove.name=”鸽子”</span><br><span class="line">dove.voice=”咕咕叫”</span><br><span class="line">sparrow:shout()</span><br><span class="line">dove:shout()</span><br></pre></td></tr></table></figure>
+<p>我们新添加了一个new方法来模拟实例化的功能。在new函数中，我们把birds赋给一个空表，然后返回这张表，这样一来我们就有了一个新的对象。所以我们声明了麻雀和鸽子两张表，它们彼此间是没有影响的：</p>
+<p>///////////////////////////////////////</p>
+<p>这个new函数我们在C#中有一个洋气的名字叫做：构造函数！ 💡</p>
+<p>其实说到这里，Lua中的继承已经呼之欲出了。鸟是一个基础模型，我们通过这个模型构造了鸽子和麻雀。</p>
+<p>但是鸽子难道不是一个基础模型吗？鸽子还分信鸽、肉鸽、观赏鸽呢，它们都是咕咕叫的啊。</p>
+<p>所以我们看信鸽，继承了鸽子，拥有咕咕叫的功能，我们再给鸽子添加一个送信的函数，那它就是信鸽了有木有？</p>
+<p>然后我们看肉鸽，继承了鸽子，拥有咕咕叫的功能，我们再给鸽子添加一个被杀掉吃肉的函数，那它就是肉鸽了有木有？</p>
+<p>啊，以上就是Lua的大部分知识点，学完之后开阔眼界，神清气爽！就等应用了。</p>
+
+    </div>
+
+    
+    
+    
+	
+	<div>
+		 
+			<div>
+	 
+		<div style="text-align:center;color:#bfbfbf;font-size:16px;"> 
+			<span>-------- 阅读完了 </span> 
+			<i class="fa fa-paw"></i> 
+			<span> 您辛苦啦 --------</span> 
+		</div>
+	
+</div> 
+		
+	</div>
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/10/20/Lua%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93%20%E5%A3%B9/" rel="prev" title="Lua学习总结 壹">
+      <i class="fa fa-chevron-left"></i> Lua学习总结 壹
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/12/20/XLua%E4%B8%ADtable%E6%98%A0%E5%B0%84%E5%88%B0%E6%8E%A5%E5%8F%A3%E6%97%B6%E7%9A%84%E9%97%AE%E9%A2%98/" rel="next" title="XLua中table映射到接口时的问题">
+      XLua中table映射到接口时的问题 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">我真的叫博士</p>
+  <div class="site-description" itemprop="description">真的！</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Bruce-DC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Bruce-DC" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fab fa-unity"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">我真的叫博士</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+    <script defer src="/lib/three/three-waves.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
